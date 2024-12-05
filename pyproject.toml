@@ -10,6 +10,7 @@ keywords = ["telegram", "aiogram", "media", "cache", "file_id"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
+aiogram = "^3.0.0"
 
 
 [build-system]
