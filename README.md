@@ -17,7 +17,7 @@ poetry add git+https://github.com/NonDoctor/aiogram-media-cache.git
 
 ### Install using pip
 ```
-pip add git+https://github.com/NonDoctor/aiogram-media-cache.git
+pip install git+https://github.com/NonDoctor/aiogram-media-cache.git
 ```
 
 ## Example
