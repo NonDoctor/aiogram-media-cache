@@ -1,12 +1,9 @@
 import os
 import pickle
 import logging
+from typing import Optional
 from aiogram import Bot
 from aiogram.types import FSInputFile
-
-# Configure logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("aiogram_media_cache")
 
 
 class MediaManager:
@@ -22,6 +19,7 @@ class MediaManager:
         upload_id: int,
         assets_dir: str,
         cache_file: str = "media_cache.pkl",
+        logger: Optional[logging.Logger] = None,
     ):
         """
         Initialize the MediaManager.
@@ -31,6 +29,7 @@ class MediaManager:
         :param assets_dir: Path to the directory containing media files.
         :param cache_file: Name of the file to store file_id cache.
         """
+        self.logger = logger or logging.getLogger("aiogram_media_cache")
         self.bot = bot
         self.upload_id = upload_id
         self.cache_file = cache_file
@@ -47,12 +46,12 @@ class MediaManager:
         if os.path.exists(self.cache_file):
             try:
                 with open(self.cache_file, "rb") as f:
-                    logger.info("Cache successfully loaded from file.")
+                    self.logger.info("Cache successfully loaded from file.")
                     return pickle.load(f)
             except Exception as e:
-                logger.error(f"Error while loading cache: {e}")
+                self.logger.error(f"Error while loading cache: {e}")
                 return {}
-        logger.warning("Cache file not found. Creating a new cache.")
+        self.logger.warning("Cache file not found. Creating a new cache.")
         return {}
 
     def _save_cache(self):
@@ -62,16 +61,16 @@ class MediaManager:
         try:
             with open(self.cache_file, "wb") as f:
                 pickle.dump(self.media_cache, f)
-            logger.info("Cache successfully saved to file.")
+            self.logger.info("Cache successfully saved to file.")
         except Exception as e:
-            logger.error(f"Error while saving cache: {e}")
+            self.logger.error(f"Error while saving cache: {e}")
 
     async def upload_assets(self):
         """
         Upload all files from the assets_dir to Telegram and cache their file_ids.
         """
         if not os.path.exists(self.assets_dir) or not os.path.isdir(self.assets_dir):
-            logger.error(
+            self.logger.error(
                 f"Directory '{self.assets_dir}' does not exist or is not a folder."
             )
             return
@@ -81,14 +80,16 @@ class MediaManager:
             if os.path.isfile(filepath):
                 if filename not in self.media_cache:
                     try:
-                        logger.info(f"Uploading file '{filename}'...")
+                        self.logger.info(f"Uploading file '{filename}'...")
                         file_id = await self._upload_file(filepath)
                         self.media_cache[filename] = file_id
-                        logger.info(
+                        self.logger.info(
                             f"File '{filename}' uploaded and cached successfully."
                         )
                     except Exception as e:
-                        logger.error(f"Error while uploading file '{filename}': {e}")
+                        self.logger.error(
+                            f"Error while uploading file '{filename}': {e}"
+                        )
         self._save_cache()
 
     async def _upload_file(self, filepath):
@@ -113,7 +114,7 @@ class MediaManager:
             else:
                 raise ValueError(f"Unsupported file type: '{file_type}'.")
         except Exception as e:
-            logger.error(f"Error while uploading file '{filepath}': {e}")
+            self.logger.error(f"Error while uploading file '{filepath}': {e}")
             raise
 
     def get_file_id(self, filename):
@@ -125,9 +126,9 @@ class MediaManager:
         """
         file_id = self.media_cache.get(filename)
         if file_id:
-            logger.info(f"file_id for '{filename}' found in cache.")
+            self.logger.info(f"file_id for '{filename}' found in cache.")
         else:
-            logger.warning(f"file_id for '{filename}' not found in cache.")
+            self.logger.warning(f"file_id for '{filename}' not found in cache.")
         return file_id
 
     def clear_cache(self):
@@ -138,7 +139,7 @@ class MediaManager:
         try:
             if os.path.exists(self.cache_file):
                 os.remove(self.cache_file)
-                logger.info("Cache file successfully removed from disk.")
+                self.logger.info("Cache file successfully removed from disk.")
         except Exception as e:
-            logger.error(f"Error while removing cache file: {e}")
-        logger.info("Cache in memory cleared.")
+            self.logger.error(f"Error while removing cache file: {e}")
+        self.logger.info("Cache in memory cleared.")
